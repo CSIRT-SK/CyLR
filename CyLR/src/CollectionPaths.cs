@@ -29,10 +29,14 @@ namespace CyLR
             proc.Start();
             while (!proc.StandardOutput.EndOfStream)
             {
-                yield return  proc.StandardOutput.ReadLine();
-            };
+                yield return proc.StandardOutput.ReadLine();
+            }
+
+            ;
         }
-        public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths, bool Usnjrnl)
+
+        public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths,
+            bool Usnjrnl)
         {
             var defaultPaths = new List<string>
             {
@@ -58,40 +62,76 @@ namespace CyLR
                 @"%SYSTEMROOT%\System32\config\SYSTEM.LOG2",
                 @"%SYSTEMROOT%\System32\config\SOFTWARE.LOG2",
                 @"%SYSTEMROOT%\System32\config\SECURITY.LOG2",
+                
+                @"%SYSTEMROOT%\System32\sru\SRUDB.dat",
+                
                 @"%PROGRAMDATA%\Microsoft\Search\Data\Applications\Windows",
                 @"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup",
-                @"%SystemDrive%\$Recycle.Bin",
-                @"%SystemDrive%\$LogFile",
-                @"%SystemDrive%\$MFT"
             };
+            var logicalDrives = FindDrives();
+            defaultPaths.AddRange(
+                logicalDrives
+                    .SelectMany(drive => new[]
+                    {
+                        $@"{drive}\$MFT", 
+                        $@"{drive}\$LogFile", 
+                        $@"{drive}\$Recycle.Bin"
+                    })
+            );
             if (Usnjrnl)
             {
-                defaultPaths.Add(@"%SystemDrive%\$Extend\$UsnJrnl:$J");
+                //defaultPaths.Add(@"%SystemDrive%\$Extend\$UsnJrnl:$J");
+                defaultPaths.AddRange(
+                    logicalDrives.Select(drive => $@"{drive}\$UsnJrnl:$J")
+                );
             }
-            defaultPaths = defaultPaths.Select(Environment.ExpandEnvironmentVariables).ToList();
 
-      			//This section will attempt to collect files or folder locations under each users profile by pulling their ProfilePath from the registry and adding it in front.
-      			//Add "defaultPaths.Add($@"{user.ProfilePath}" without the quotes in front of the file / path to be collected in each users profile.
+            defaultPaths = defaultPaths
+                .Select(Environment.ExpandEnvironmentVariables)
+                .Where(path => Directory.Exists(path) || File.Exists(path))
+                .ToList();
+
+            //This section will attempt to collect files or folder locations under each users profile by pulling their ProfilePath from the registry and adding it in front.
+            //Add "defaultPaths.Add($@"{user.ProfilePath}" without the quotes in front of the file / path to be collected in each users profile.
             if (!Platform.IsUnixLike())
             {
-              var users = FindUsers();
-              foreach (var user in users)
-              {
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent");
-                  defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT");
-                  defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG1");
-                  defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG2");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG1");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG2");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\Explorer");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Google\Chrome\User Data\Default\History");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\WebCache\");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\ConnectedDevicesPlatform");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline");
-                  defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Mozilla\Firefox\Profiles\");
-              }
+                var users = FindUsers();
+                if (arguments.AllAppData)
+                {
+                    foreach (var user in users)
+                    {
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG1");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG2");
+                        defaultPaths.Add(
+                            $@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat");
+                        defaultPaths.Add(
+                            $@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG1");
+                        defaultPaths.Add(
+                            $@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG2");
+                    }
+                }
+                else
+                {
+                    foreach (var user in users)
+                    {
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG1");
+                        defaultPaths.Add($@"{user.ProfilePath}\NTUSER.DAT.LOG2");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG1");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat.LOG2");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\Explorer");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Google\Chrome\User Data\Default\History");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\WebCache\");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\ConnectedDevicesPlatform");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Mozilla\Firefox\Profiles\");
+                    }
+                }
             }
 
             if (Platform.IsUnixLike())
@@ -121,39 +161,56 @@ namespace CyLR
                 AllFiles.AddRange(RunCommand("/usr/bin/find", "/ -print"));
 
                 // Find all *.plist files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("*.plist"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("*.plist"))));
                 // Find all .bash_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains(".bash_history"))));
                 // Find all .sh_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".sh_history"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains(".sh_history"))));
                 // Find Chrome Preference files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/History"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Cookies"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Bookmarks"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Extensions"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Last"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Shortcuts"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Top"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Visited"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/History"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Cookies"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Bookmarks"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Extensions"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Last"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Shortcuts"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Top"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("Support/Google/Chrome/Default/Visited"))));
 
                 // Find FireFox Preference Files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("places.sqlite"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("downloads.sqlite"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("places.sqlite"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
+                    stringToCheck.Contains("downloads.sqlite"))));
 
                 // Fix any spaces to work with MacOS naming conventions
-                defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
+                defaultPaths =
+                    tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
             }
+
             var paths = new List<string>(additionalPaths);
 
             if (arguments.CollectionFilePath != ".")
             {
                 if (File.Exists(arguments.CollectionFilePath))
                 {
-                    paths.AddRange(File.ReadAllLines(arguments.CollectionFilePath).Select(Environment.ExpandEnvironmentVariables));
+                    paths.AddRange(File.ReadAllLines(arguments.CollectionFilePath)
+                        .Select(Environment.ExpandEnvironmentVariables));
                 }
                 else
                 {
-                    Console.WriteLine("Error: Could not find file: {0}", arguments.CollectionFilePath);
+                    Console.WriteLine("Error: Could not find file: {0}",
+                        arguments.CollectionFilePath);
                     Console.WriteLine("Exiting");
                     throw new ArgumentException();
                 }
@@ -171,14 +228,18 @@ namespace CyLR
                     return defaultPaths;
                 }
             }
+
             return paths.Any() ? paths : defaultPaths;
         }
+
         public static IEnumerable<UserProfile> FindUsers()
         {
-            var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
+            var key = Registry.LocalMachine.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
             foreach (string name in key.GetSubKeyNames())
             {
-                var path = $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{name}";
+                var path =
+                    $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{name}";
                 var profile = Registry.GetValue(path, "FullProfile", string.Empty);
                 if (profile != null)
                 {
@@ -186,13 +247,15 @@ namespace CyLR
                     {
                         UserKey = name,
                         Path = $@"{path}\ProfileImagePath",
-                        ProfilePath = (string)Registry.GetValue(path, "ProfileImagePath", 0),
-                        FullProfile = (int)Registry.GetValue(path, "FullProfile", 0)
+                        ProfilePath = (string) Registry.GetValue(path, "ProfileImagePath", 0),
+                        FullProfile = (int) Registry.GetValue(path, "FullProfile", 0)
                     };
                     if (result.FullProfile != -1) yield return result;
                 }
             }
         }
+
+        public static IEnumerable<string> FindDrives() => Directory.GetLogicalDrives();
 
         internal class UserProfile
         {
