@@ -65,8 +65,13 @@ Windows Default
     * %SystemDrive%\$Recycle.Bin
     * %SystemDrive%\$LogFile
     * %SystemDrive%\$MFT
-* Artifacts For All Users
-    * {user.ProfilePath}\NTUSER.DAT
+    * %SystemDrive%\$UsnJrnnl:$J
+* Artifacts from all non-system NTFS drives
+    * [drive]\$Recycle.Bin
+    * [drive]\$LogFile
+    * [drive]\$MFT
+    * [drive]\$UsnJrnnl:$J
+* Artifacts For All Users (default)
     * {user.ProfilePath}\AppData\Local\Microsoft\Windows\UsrClass.dat
     * {user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent
     * {user.ProfilePath}\NTUSER.DAT
@@ -82,6 +87,12 @@ Windows Default
     * {user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\
     * {user.ProfilePath}\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline
     * {user.ProfilePath}\AppData\Roaming\Mozilla\Firefox\Profiles\
+* Artifacts for all users (if used with *--app-data* switch)
+    * {user.ProfilePath}\AppData\
+    * {user.ProfilePath}\NTUSER.DAT
+    * {user.ProfilePath}\NTUSER.DAT.LOG1
+    * {user.ProfilePath}\NTUSER.DAT.LOG2
+    * 
 
 Mac and Linux Default
 *  "/var/log",
@@ -117,7 +128,7 @@ Mac and Linux Default
     * '-p' — SFTP password
     * '-s' — SFTP Server resolvable hostname or IP address and port. If no port is given then 22 is used by default.  The format is <server name>:<port>.  Usage: -s 8.8.8.8:22"
 * '-c' — Optional argument to provide custom list of artifact files and directories (one entry per line). NOTE: Must use full path including drive letter on each line.  MFT can be collected by "C:\$MFT" or "D:\$MFT" and so on.  Usage: -c <path to config file>
-
+* '--app-data' — The resulting zip file will contain whole AppData directory of all users (instead of just a few selected files)
 
 ## DEPENDENCIES
 in general: some kind of administrative rights on the target (root, sudo, administrator,...).
@@ -165,3 +176,5 @@ Collect artifacts, send data to SFTP server 8.8.8.8, and keep all artifacts in m
 ## AUTHORS
 * [Jason Yegge](https://github.com/Lansatac)
 * [Alan Orlikoski](https://github.com/rough007)
+
+* Modifications for [CSIRT.SK](https://github.com/CSIRT-SK) by [Viliam Kačala](https://github.com/vildibald)
