@@ -30,7 +30,9 @@ namespace CyLR
             while (!proc.StandardOutput.EndOfStream)
             {
                 yield return proc.StandardOutput.ReadLine();
-            };
+            }
+
+            ;
         }
         public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths, bool Usnjrnl)
         {
