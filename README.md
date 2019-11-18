@@ -175,5 +175,5 @@ Collect artifacts, send data to SFTP server 8.8.8.8, and keep all artifacts in m
 ## AUTHORS
 * [Jason Yegge](https://github.com/Lansatac)
 * [Alan Orlikoski](https://github.com/rough007)
-
-* Modifications for [CSIRT.SK](https://github.com/CSIRT-SK) by [Viliam Kačala](https://github.com/vildibald)
+## Modifications
+* For [CSIRT.SK](https://github.com/CSIRT-SK) by [Viliam Kačala](https://github.com/vildibald)
