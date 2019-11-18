@@ -30,13 +30,9 @@ namespace CyLR
             while (!proc.StandardOutput.EndOfStream)
             {
                 yield return proc.StandardOutput.ReadLine();
-            }
-
-            ;
+            };
         }
-
-        public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths,
-            bool Usnjrnl)
+        public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths, bool Usnjrnl)
         {
             var defaultPaths = new List<string>
             {
@@ -128,7 +124,7 @@ namespace CyLR
                         defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\Microsoft\Windows\WebCache\");
                         defaultPaths.Add($@"{user.ProfilePath}\AppData\Local\ConnectedDevicesPlatform");
                         defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\");
-                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline");
+                        defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt");
                         defaultPaths.Add($@"{user.ProfilePath}\AppData\Roaming\Mozilla\Firefox\Profiles\");
                     }
                 }
@@ -161,56 +157,39 @@ namespace CyLR
                 AllFiles.AddRange(RunCommand("/usr/bin/find", "/ -print"));
 
                 // Find all *.plist files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("*.plist"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("*.plist"))));
                 // Find all .bash_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains(".bash_history"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
                 // Find all .sh_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains(".sh_history"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".sh_history"))));
                 // Find Chrome Preference files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/History"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Cookies"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Bookmarks"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Extensions"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Last"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Shortcuts"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Top"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("Support/Google/Chrome/Default/Visited"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/History"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Cookies"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Bookmarks"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Extensions"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Last"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Shortcuts"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Top"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Visited"))));
 
                 // Find FireFox Preference Files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("places.sqlite"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck =>
-                    stringToCheck.Contains("downloads.sqlite"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("places.sqlite"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("downloads.sqlite"))));
 
                 // Fix any spaces to work with MacOS naming conventions
-                defaultPaths =
-                    tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
+                defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
             }
-
             var paths = new List<string>(additionalPaths);
 
             if (arguments.CollectionFilePath != ".")
             {
                 if (File.Exists(arguments.CollectionFilePath))
                 {
-                    paths.AddRange(File.ReadAllLines(arguments.CollectionFilePath)
-                        .Select(Environment.ExpandEnvironmentVariables));
+                    paths.AddRange(File.ReadAllLines(arguments.CollectionFilePath).Select(Environment.ExpandEnvironmentVariables));
                 }
                 else
                 {
-                    Console.WriteLine("Error: Could not find file: {0}",
-                        arguments.CollectionFilePath);
+                    Console.WriteLine("Error: Could not find file: {0}", arguments.CollectionFilePath);
                     Console.WriteLine("Exiting");
                     throw new ArgumentException();
                 }
@@ -228,18 +207,14 @@ namespace CyLR
                     return defaultPaths;
                 }
             }
-
             return paths.Any() ? paths : defaultPaths;
         }
-
         public static IEnumerable<UserProfile> FindUsers()
         {
-            var key = Registry.LocalMachine.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
+            var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
             foreach (string name in key.GetSubKeyNames())
             {
-                var path =
-                    $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{name}";
+                var path = $@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{name}";
                 var profile = Registry.GetValue(path, "FullProfile", string.Empty);
                 if (profile != null)
                 {
@@ -247,8 +222,8 @@ namespace CyLR
                     {
                         UserKey = name,
                         Path = $@"{path}\ProfileImagePath",
-                        ProfilePath = (string) Registry.GetValue(path, "ProfileImagePath", 0),
-                        FullProfile = (int) Registry.GetValue(path, "FullProfile", 0)
+                        ProfilePath = (string)Registry.GetValue(path, "ProfileImagePath", 0),
+                        FullProfile = (int)Registry.GetValue(path, "FullProfile", 0)
                     };
                     if (result.FullProfile != -1) yield return result;
                 }
